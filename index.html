@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>اختبار الطلاب - النسخة النهائية المحسنة</title>
+<style>
+  /* 1. دعم التجاوب (Media Query) */
+  body { 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    padding: 20px; 
+    background:#f5f5f5; 
+    direction: rtl; 
+    text-align: right; 
+    transition: background-color 0.5s;
+  }
+  
+  #questionBox { border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-bottom: 20px; background:white; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  
+  #timer { font-size: 24px; font-weight: bold; margin-bottom: 10px; transition: color 0.5s; } 
+  #lowTimeWarning { color: #FF9800; font-weight: bold; margin-top: 5px; display: none; }
+  
+  #progressBar { width: 100%; background: #ddd; border-radius: 10px; margin-bottom: 20px; }
+  #progressTime { height: 20px; background: #4CAF50; border-radius: 10px; transition: background-color 0.5s; } 
+  
+  input[type="text"], input[type="number"], textarea { 
+    padding: 8px 10px; 
+    font-size: 16px; 
+    width: 250px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    transition: border-color 0.3s;
+    text-align: right; 
+    margin-bottom: 10px;
+    box-sizing: border-box; 
+  }
+  textarea {
+      width: 100%;
+      min-height: 80px;
+      resize: vertical;
+  }
+  input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
+    border-color: #007bff; 
+    outline: none;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+  }
+
+  /* تنسيق الزر الافتراضي */
+  .actionBtn {
+    padding: 12px 25px;
+    font-size: 18px;
+    background-color: #007bff; 
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top:10px;
+    transition: background-color 0.3s, transform 0.1s;
+    width: 100%; 
+    max-width: 300px;
+    display: block; 
+  }
+  .actionBtn:hover {
+    background-color: #0056b3;
+  }
+  /* زر البدء بتنسيق مميز */
+  #startExamBtn {
+      background-color: #4CAF50; 
+      max-width: 400px;
+      margin: 20px auto;
+  }
+  #startExamBtn:hover {
+      background-color: #45a049;
+  }
+  
+  #cheatingWarning { color: white; background: #FF0000; padding: 10px; border-radius: 5px; margin-bottom: 15px; display: none; } 
+
+  label {
+    display: flex; 
+    align-items: center; 
+    margin: 10px 0;
+    cursor: pointer;
+    padding: 12px;
+    border-radius: 6px;
+    transition: background-color 0.2s, box-shadow 0.2s;
+  }
+  label:hover {
+    background: #e9e9e9;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  input[type="radio"] {
+    margin-left: 10px; 
+    transform: scale(1.3); 
+    order: 2; 
+  }
+
+  #resultBox {
+    font-size: 20px;
+    padding: 30px;
+    border: 2px solid #007bff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    background:white;
+    border-radius:8px;
+    text-align: center;
+    display:none; 
+  }
+
+  #detailsTable {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-size: 14px;
+      text-align: right;
+  }
+  #detailsTable th, #detailsTable td {
+      border: 1px solid #ddd;
+      padding: 8px;
+  }
+  #detailsTable th {
+      background-color: #f2f2f2;
+      color: #333;
+      text-align: right;
+  }
+  .correct-answer { background-color: #e6ffe6; }
+  .wrong-answer { background-color: #ffe6e6; }
+  .cheating-flagged { background-color: #ffcccc; border-left: 5px solid red; } 
+  
+  /* Media Query للهواتف الذكية */
+  @media (max-width: 600px) {
+      body { padding: 10px; }
+      input[type="text"], input[type="number"], textarea { width: 100%; } 
+      #detailsTable, #detailsTable tbody, #detailsTable tr, #detailsTable td {
+          display: block;
+          width: 100%;
+      }
+      #detailsTable thead { display: none; }
+      #detailsTable tr { margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; }
+      #detailsTable td { 
+          text-align: right; 
+          padding-left: 50%;
+          position: relative;
+          border: none;
+      }
+      #detailsTable td:before { 
+          content: attr(data-label); 
+          position: absolute;
+          right: 6px;
+          width: 45%;
+          padding-left: 10px;
+          font-weight: bold;
+          text-align: right;
+      }
+  }
+</style>
+</head>
+<body>
+<audio id="lowTimeSound" src="path/to/countdown_beep.mp3" preload="auto"></audio>
+<audio id="correctAnswerSound" src="path/to/correct_chime.mp3" preload="auto"></audio>
+<audio id="wrongAnswerSound" src="path/to/wrong_buzz.mp3" preload="auto"></audio>
+
+<h2>اختبار الطلاب المحسّن</h2>
+
+<div id="studentInfo">
+  اسم الطالب: <input type="text" id="studentName" placeholder="أدخل اسمك">
+</div>
+<div id="studentIDInfo">
+  معرف الطالب: <input type="text" id="studentID" placeholder="أدخل معرف الطالب">
+</div>
+<div>
+  نسبة النجاح المطلوبة (%): <input type="number" id="passPercentage" value="50" min="1" max="100">
+</div>
+<br>
+
+<button id="startExamBtn" class="actionBtn" onclick="startExam()">ابدأ الاختبار الآن</button>
+
+
+<div id="examElements" style="display:none;">
+    <div id="cheatingWarning">⚠️ تم رصد محاولة مغادرة الصفحة أو فتح أدوات المطور. سيتم تسجيل محاولة الغش!</div>
+    <div id="progressBar"><div id="progressTime"></div></div>
+    <div id="timer"></div>
+    <div id="lowTimeWarning">⚠️ تبقى 5 ثوانٍ! أسرع في الإجابة.</div>
+    <div id="questionBox"></div>
+    <button id="submitBtn" class="actionBtn" onclick="submitExam()">إرسال الإجابة</button>
+</div>
+<div id="resultBox"></div>
+
+<script>
+// ⚠️ يجب تغيير هذا الرابط إلى رابط Web App الخاص بك بعد النشر
+const API_URL = "https://script.google.com/macros/s/AKfycbwoqZa50RfZlFKiZOrHI88poc8bB15UYn1SHU93auTQ78ckNrZi85h-G1REvIsKd5Q/exec";
+
+let questions = [];
+let currentIndex = 0;
+let timeWorker; 
+let remainingTime;
+let studentAnswers = [];
+let totalQuestionTime; 
+let examStartTime = new Date(); 
+let cheatingFlag = false; 
+let questionsLoaded = false; 
+
+const lowTimeSound = document.getElementById('lowTimeSound');
+const correctAnswerSound = document.getElementById('correctAnswerSound');
+const wrongAnswerSound = document.getElementById('wrongAnswerSound');
+
+const examElements = document.getElementById('examElements');
+const startExamButton = document.getElementById('startExamBtn');
+const studentNameInput = document.getElementById('studentName');
+const studentIDInput = document.getElementById('studentID');
+const cheatingWarningElement = document.getElementById('cheatingWarning');
+
+
+// --- 1. آلية منع الغش المتقدمة ---
+document.addEventListener('contextmenu', event => event.preventDefault());
+
+let cheatingAttempts = 0;
+
+function handleCheatingAttempt(reason) {
+    if (cheatingFlag || examElements.style.display === 'none') return; 
+
+    cheatingAttempts++;
+    cheatingWarningElement.style.display = 'block';
+    console.warn(`Cheating attempt detected: ${reason} (Attempt: ${cheatingAttempts})`);
+    
+    if (cheatingAttempts >= 2) {
+        cheatingFlag = true;
+        if (timeWorker) timeWorker.postMessage('stop');
+        sendResults(); 
+        alert("تم إيقاف الاختبار وتسجيل محاولة الغش.");
+    }
+}
+
+window.onblur = () => {
+    if(currentIndex < questions.length) {
+        handleCheatingAttempt("Window Blur");
+    }
+};
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
+        handleCheatingAttempt("Developer Tools Attempt");
+        e.preventDefault();
+    }
+});
+
+
+document.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter' && document.getElementById('submitBtn').style.display !== 'none') {
+        submitExam();
+    }
+});
+
+// --- 2. إعداد Web Worker للمؤقت ---
+const workerScript = `
+    let timerInterval;
+    let time = 0;
+    
+    self.onmessage = function(e) {
+        if (e.data.command === 'start') {
+            time = e.data.initialTime;
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                time--;
+                self.postMessage(time);
+                if (time <= 0) {
+                    clearInterval(timerInterval);
+                    self.postMessage('timeUp');
+                }
+            }, 1000);
+        } else if (e.data === 'stop') {
+            if (timerInterval) clearInterval(timerInterval);
+        }
+    };
+`;
+const workerBlob = new Blob([workerScript], { type: 'application/javascript' });
+const workerURL = URL.createObjectURL(workerBlob);
+
+// --- جلب البيانات عند تحميل الصفحة، لكن لا يتم البدء ---
+fetch(API_URL + "?func=getQuestions")
+  .then(res => res.json())
+  .then(data => initTest(data))
+  .catch(error => {
+      console.error('Error fetching questions:', error);
+      alert('خطأ في تحميل الأسئلة من الخادم.');
+  });
+
+function initTest(data) {
+  if(data.length === 0 || data.status === 'error'){ 
+      alert("لا توجد أسئلة أو حدث خطأ في الخادم!"); 
+      return; 
+  }
+  
+  questions = data.map(q => ({
+      ...q,
+      type: q.type || 'radio' 
+  }));
+  
+  questionsLoaded = true;
+  startExamButton.textContent = 'ابدأ الاختبار الآن';
+  startExamButton.disabled = false;
+  
+  if (!timeWorker) {
+      timeWorker = new Worker(workerURL);
+      timeWorker.onmessage = (e) => {
+          if (e.data === 'timeUp') {
+              recordAnswer(totalQuestionTime); 
+              currentIndex++;
+              updateOverallProgress();
+              showQuestion(currentIndex);
+          } else {
+              remainingTime = e.data;
+              document.getElementById("timer").textContent = `الوقت المتبقي: ${remainingTime} ثانية`;
+              
+              if (remainingTime === 5) {
+                  document.getElementById("lowTimeWarning").style.display = "block";
+                  lowTimeSound.play().catch(e => console.log("Sound playback blocked:", e));
+              } else if (remainingTime < 5) {
+                  document.getElementById("lowTimeWarning").style.display = "block";
+              } else {
+                  document.getElementById("lowTimeWarning").style.display = "none";
+              }
+              
+              updateTimeProgress(remainingTime, totalQuestionTime);
+          }
+      };
+  }
+}
+
+/**
+ * 🚨 دالة بدء الاختبار مع التحقق الفوري من المعرف على الخادم 🚨
+ */
+async function startExam() {
+    const studentName = studentNameInput.value.trim();
+    const studentID = studentIDInput.value.trim();
+
+    if(studentName === "" || studentID === ""){ 
+        alert("الرجاء إدخال اسم الطالب ومعرفه أولاً."); 
+        return; 
+    }
+    
+    if (!questionsLoaded || questions.length === 0) {
+        alert("الأسئلة لم يتم تحميلها بعد. الرجاء المحاولة مرة أخرى.");
+        return;
+    }
+    
+    // 1. إيقاف الإدخال وتحويل زر البدء إلى حالة "جاري التحقق"
+    studentNameInput.disabled = true;
+    studentIDInput.disabled = true;
+    startExamButton.textContent = 'جاري التحقق...';
+    startExamButton.disabled = true;
+
+    try {
+        // 2. إرسال طلب التحقق إلى Apps Script
+        const response = await fetch(`${API_URL}?func=validateIDOnly&studentID=${encodeURIComponent(studentID)}`);
+        const msg = await response.json();
+
+        // 3. التحقق من الرد
+        if (msg.status === 'success') {
+            
+            startExamButton.style.display = 'none';
+            examElements.style.display = 'block';
+            examStartTime = new Date(); 
+            showQuestion(currentIndex);
+            
+        } else {
+            // التحقق فشل (خطأ 401 من الخادم)
+            alert(`فشل التحقق: ${msg.message}`);
+            
+            // إعادة تمكين الحقول والزر للتحرير
+            studentNameInput.disabled = false;
+            studentIDInput.disabled = false;
+            startExamButton.textContent = 'ابدأ الاختبار الآن';
+            startExamButton.disabled = false;
+        }
+
+    } catch (error) {
+        alert(`خطأ في الاتصال بالخادم: تعذر التحقق من المعرف. ${error.message}`);
+        console.error('Validation fetch error:', error);
+        
+        // إعادة تمكين الحقول في حالة فشل الاتصال
+        studentNameInput.disabled = false;
+        studentIDInput.disabled = false;
+        startExamButton.textContent = 'ابدأ الاختبار الآن';
+        startExamButton.disabled = false;
+    }
+}
+
+
+function showQuestion(index) {
+  if (cheatingFlag) return; 
+  if (index >= questions.length) { 
+      if (timeWorker) timeWorker.postMessage('stop');
+      sendResults(); 
+      return; 
+  }
+
+  const q = questions[index];
+  const box = document.getElementById("questionBox");
+  let inputHTML = '';
+  
+  if (q.type === 'shortText') {
+      inputHTML = `
+        <label for="textAnswer">أدخل إجابتك هنا:</label>
+        <textarea id="textAnswer" name="answer" placeholder="اكتب إجابتك"></textarea>
+      `;
+  } else {
+      inputHTML = `
+        <label><input type="radio" name="answer" value="${q.opt1}"> <span>${q.opt1}</span></label>
+        <label><input type="radio" name="answer" value="${q.opt2}"> <span>${q.opt2}</span></label>
+        <label><input type="radio" name="answer" value="${q.opt3}"> <span>${q.opt3}</span></label>
+      `;
+  }
+
+  box.innerHTML = `
+    <b>السؤال ${index + 1} (${q.type === 'shortText' ? 'نصي قصير' : 'اختيار من متعدد'}):</b> ${q.question}<br><br>
+    ${inputHTML}
+  `;
+
+  totalQuestionTime = parseInt(q.time); 
+  remainingTime = totalQuestionTime;
+  
+  document.getElementById("lowTimeWarning").style.display = "none";
+  document.getElementById("timer").textContent = `الوقت المتبقي: ${remainingTime} ثانية`;
+
+  timeWorker.postMessage({ command: 'start', initialTime: totalQuestionTime });
+
+  updateTimeProgress(remainingTime, totalQuestionTime);
+  updateOverallProgress();
+}
+
+function updateTimeProgress(current, total) {
+    const timeRatio = current / total;
+    const timeProgressElement = document.getElementById("progressTime");
+    const timerElement = document.getElementById("timer");
+    
+    timeProgressElement.style.width = (timeRatio * 100) + "%";
+    
+    let color;
+    if (timeRatio > 0.4) {
+        color = '#4CAF50'; 
+    } else if (timeRatio > 0.15) {
+        color = '#FFC107'; 
+    } else {
+        color = '#F44336'; 
+    }
+    
+    timeProgressElement.style.backgroundColor = color;
+    timerElement.style.color = color;
+}
+
+
+function submitExam() {
+  if (cheatingFlag) return; 
+  
+  if (timeWorker) timeWorker.postMessage('stop');
+  
+  const timeTaken = totalQuestionTime - remainingTime;
+  recordAnswer(timeTaken);
+  currentIndex++;
+  updateOverallProgress();
+  showQuestion(currentIndex);
+}
+
+
+function recordAnswer(timeTaken) {
+  const q = questions[currentIndex];
+  let answer;
+  let isCorrect;
+  
+  if (q.type === 'shortText') {
+      answer = document.getElementById('textAnswer') ? document.getElementById('textAnswer').value.trim() : "No Answer";
+      isCorrect = (answer === q.correct); 
+  } else {
+      const selected = document.querySelector('input[name="answer"]:checked');
+      answer = selected ? selected.value : "No Answer";
+      isCorrect = answer === q.correct;
+  }
+  
+  if(answer !== "No Answer"){
+      if(isCorrect){
+          correctAnswerSound.play().catch(e => console.log("Sound playback blocked:", e));
+      } else {
+          wrongAnswerSound.play().catch(e => console.log("Sound playback blocked:", e));
+      }
+  }
+
+  studentAnswers.push({
+    question: q.question,
+    selected: answer,
+    correct: q.correct,
+    type: q.type, 
+    timeTaken: timeTaken,
+    answeredAt: new Date().toISOString()
+  });
+}
+
+function updateOverallProgress() {
+  const progressContainer = document.getElementById("progressBar");
+  const percent = Math.round((currentIndex / questions.length) * 100);
+  
+  progressContainer.style.width = "100%"; 
+  
+  if(currentIndex >= questions.length) {
+      progressContainer.style.display = "none";
+  } else {
+      document.getElementById("progressTime").style.width = percent + "%"; 
+      progressContainer.style.display = "block";
+  }
+}
+
+function sendResults() {
+  const studentName = studentNameInput.value.trim();
+  const studentID = studentIDInput.value.trim();
+  const passPercentage = parseInt(document.getElementById("passPercentage").value) || 50; 
+  const examEndTime = new Date();
+  const totalExamDurationSeconds = Math.round((examEndTime - examStartTime) / 1000); 
+
+  
+  if(studentName === "" || studentID === ""){ 
+    alert("الرجاء إدخال اسم الطالب ومعرفه قبل إظهار النتائج."); 
+    return; 
+  }
+  
+  examElements.style.display = "none";
+
+  const box = document.getElementById("resultBox");
+  box.style.display = "block";
+  box.innerHTML = '<b style="color:#007bff;">جاري إرسال النتائج وحساب الدرجة... الرجاء الانتظار قليلاً.</b>'; 
+
+  let correctCount = studentAnswers.filter(a => a.selected === a.correct).length;
+  let total = questions.length;
+  let wrongCount = total - correctCount;
+  let percentage = Math.round((correctCount / total) * 100);
+  
+  const statusEmoji = (percentage >= passPercentage) ? "✅" : "❌";
+  const statusText = (percentage >= passPercentage) ? "ناجح" : "راسب";
+  const statusColor = (percentage >= passPercentage) ? '#4caf50' : '#f44336';
+
+  const result = {
+    studentID: studentID,
+    student: studentName,
+    score: percentage,
+    total: total,
+    correct: correctCount,
+    passPercentage: passPercentage,
+    totalExamDuration: totalExamDurationSeconds,
+    cheatingFlag: cheatingFlag, 
+    details: studentAnswers
+  };
+  
+  // *** إرسال النتائج النهائية باستخدام POST ***
+  fetch(API_URL + "?func=submitResult", {
+      method: 'POST',
+      headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: 'result=' + encodeURIComponent(JSON.stringify(result)) 
+  })
+    .then(res => res.json())
+    .then(msg => {
+        
+        // التحقق من حالة خطأ Apps Script (تحقق معرف الطالب، كخطوة أمان إضافية)
+        if (msg.status === 'error' && msg.code === 401) {
+             box.innerHTML = `
+                <h3 style="color:red;">⚠️ خطأ في التسجيل ⚠️</h3>
+                <p style="font-size: 18px;">${msg.message}</p>
+                <br>
+                <button onclick="window.location.reload()" class="actionBtn" style="background: #f44336; margin: 0 auto; display: block;">إعادة المحاولة</button>
+              `;
+              if (timeWorker) timeWorker.terminate();
+              return; 
+        }
+      
+        // بناء جدول تفاصيل الإجابات
+        let detailsHTML = '<h3>تفاصيل إجابات الطالب:</h3>';
+        detailsHTML += '<table id="detailsTable"><thead><tr><th>#</th><th>السؤال</th><th>نوع السؤال</th><th>إجابة الطالب</th><th>الإجابة الصحيحة</th><th>النتيجة</th><th>زمن الإجابة (ث)</th></tr></thead><tbody>';
+        
+        studentAnswers.forEach((a, i) => {
+            const isCorrect = a.selected === a.correct;
+            const rowClass = isCorrect ? 'correct-answer' : 'wrong-answer';
+            detailsHTML += `
+                <tr class="${rowClass}">
+                    <td data-label="#">${i + 1}</td>
+                    <td data-label="السؤال">${a.question}</td>
+                    <td data-label="النوع">${a.type === 'shortText' ? 'نصي' : 'اختيار'}</td>
+                    <td data-label="إجابة الطالب">${a.selected}</td>
+                    <td data-label="الإجابة الصحيحة">${a.correct}</td>
+                    <td data-label="النتيجة">${isCorrect ? 'صحيحة ✅' : 'خاطئة ❌'}</td>
+                    <td data-label="زمن الإجابة (ث)">${a.timeTaken}</td>
+                </tr>
+            `;
+        });
+        detailsHTML += '</tbody></table>';
+
+        // تحديث صندوق النتيجة
+        box.innerHTML = `
+          <h3>🎉 نتيجة الاختبار 🎉</h3>
+          <b>الطالب: ${studentName}</b><br>
+          <hr style="border-top: 1px solid #ddd; margin: 15px 0;">
+          ${cheatingFlag ? '<p class="cheating-flagged" style="font-size:20px;">🚩 تم وضع علامة غش على هذا الاختبار!</p>' : ''}
+          <p>عدد الأسئلة الكلي: ${total}</p>
+          <p style="color: green;">عدد الإجابات الصحيحة: ${correctCount}</p>
+          <p style="color: red;">عدد الإجابات الخاطئة: ${wrongCount}</p>
+          <p>مدة الاختبار الكلية: ${totalExamDurationSeconds} ثانية</p>
+          <br>
+          <p style="font-size: 24px;">النسبة المئوية: <b>${percentage}%</b> (النجاح: ${passPercentage}%)</p>
+          <p style="font-size: 28px; font-weight: bold; color: ${statusColor};">
+            الحالة: ${statusText} ${statusEmoji}
+          </p>
+          <br>
+          <hr style="border-top: 1px solid #ddd; margin: 15px 0;">
+          ${detailsHTML}
+          <br>
+          <small style="color:#666;">${msg.message || "تم تسجيل النتيجة بنجاح!"}</small>
+        `;
+    })
+    .catch(error => {
+      box.innerHTML = `
+        <h3 style="color:red;">⚠️ خطأ في الإرسال ⚠️</h3>
+        <b>حدث خطأ أثناء إرسال النتائج:</b> <br>
+        <small>${error.message}. يرجى التحقق من رابط Web App.</small>
+      `;
+      console.error('Error submitting results:', error);
+    });
+    
+    if (timeWorker) timeWorker.terminate();
+}
+</script>
+
+</body>
+</html>
