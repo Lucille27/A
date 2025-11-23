@@ -3,13 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <title>اختبار الطلاب</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"> 
 
   <meta property="og:title" content="مركز لوسيل للتدريب والتأهيل - الاختبار الإلكتروني" />
 <meta property="og:description" content="   الاختبار الإلكتروني مركز لوسيل للتدريب والتأهيل. يرجى تعبئة بياناتك وإتمام الاختبار بنجاح ." />
 <meta property="og:image" content="https://lucille27.github.io/A/img/Lucille.jpg" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="628" /> 
-
 <meta property="og:url" content="https://lucille27.github.io/A" />
 <meta property="og:type" content="website" />
 <meta property="og:locale" content="ar_AR" />
@@ -25,7 +23,18 @@
     transition: background-color 0.5s;
   }
   
-  #questionBox { border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-bottom: 20px; background:white; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  #questionBox { 
+    border: 1px solid #ccc; 
+    padding: 20px; 
+    border-radius: 8px; 
+    margin-bottom: 20px; 
+    background:white; 
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+    /* توسيط المحتوى داخل الجسم */
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+  }
   
   #timer { font-size: 24px; font-weight: bold; margin-bottom: 10px; transition: color 0.5s; } 
   #lowTimeWarning { color: #FF9800; font-weight: bold; margin-top: 5px; display: none; }
@@ -33,20 +42,24 @@
   #progressBar { width: 100%; background: #ddd; border-radius: 10px; margin-bottom: 20px; }
   #progressTime { height: 20px; background: #4CAF50; border-radius: 10px; transition: background-color 0.5s; } 
   
+  /* تحسينات الإدخال للتجاوب */
   input[type="text"], input[type="number"], textarea { 
-    padding: 8px 10px; 
+    padding: 10px 12px; 
     font-size: 16px; 
-    width: 250px;
+    width: 100%; /* اجعلها تملأ العرض دائماً */
+    max-width: 450px; /* تحديد عرض أقصى على الشاشات الكبيرة */
     border: 1px solid #ccc;
     border-radius: 4px;
     transition: border-color 0.3s;
     text-align: right; 
-    margin-bottom: 10px;
+    margin-bottom: 15px; 
     box-sizing: border-box; 
+    display: block; /* لضمان أخذ سطر كامل */
   }
   textarea {
       width: 100%;
-      min-height: 80px;
+      max-width: 100%;
+      min-height: 100px;
       resize: vertical;
   }
   input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
@@ -55,7 +68,7 @@
     box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
   }
 
-  /* تنسيق الزر الافتراضي */
+  /* تنسيق الزر الافتراضي والتجاوب */
   .actionBtn {
     padding: 12px 25px;
     font-size: 18px;
@@ -64,10 +77,10 @@
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    margin-top:10px;
+    margin: 15px auto; /* توسيط الزر */
     transition: background-color 0.3s, transform 0.1s;
     width: 100%; 
-    max-width: 300px;
+    max-width: 450px; /* تحديد عرض أقصى للأزرار */
     display: block; 
   }
   .actionBtn:hover {
@@ -76,8 +89,9 @@
   /* زر البدء بتنسيق مميز */
   #startExamBtn {
       background-color: #4CAF50; 
-      max-width: 400px;
-      margin: 20px auto;
+      max-width: 450px;
+      margin: 30px auto; 
+      display: block;
   }
   #startExamBtn:hover {
       background-color: #45a049;
@@ -113,6 +127,9 @@
     border-radius:8px;
     text-align: center;
     display:none; 
+    /* عرض أقصى للنتيجة وتوسيطها */
+    max-width: 800px;
+    margin: 20px auto;
   }
 
   #detailsTable {
@@ -135,10 +152,12 @@
   .wrong-answer { background-color: #ffe6e6; }
   .cheating-flagged { background-color: #ffcccc; border-left: 5px solid red; } 
   
-  /* Media Query للهواتف الذكية */
+  /* Media Query للهواتف الذكية (لتحويل الجدول) */
   @media (max-width: 600px) {
       body { padding: 10px; }
-      input[type="text"], input[type="number"], textarea { width: 100%; } 
+      /* ملاحظة: عناصر الإدخال والأزرار تستجيب بالفعل لـ 100% في الكود الأعلى */
+      
+      /* تحويل الجدول إلى بطاقات */
       #detailsTable, #detailsTable tbody, #detailsTable tr, #detailsTable td {
           display: block;
           width: 100%;
